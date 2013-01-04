@@ -34,9 +34,7 @@
 #include <linux/mutex.h>
 #include <linux/switch.h>
 #include <linux/wakelock.h>
-
 #include <linux/fastchg.h>
-
 #include <plat/usb.h>
 
 #include "mux.h"
@@ -265,7 +263,7 @@ static void tuna_vusb_enable(struct tuna_otg *tuna_otg, bool enable)
 	}
 }
 
-/*
+    /*
      *  KEF - 10/15/12:  Moved here for use in tuna_set_vbus_drive() 
      *                   for JourneymanMod Kernel. 
      */
@@ -878,7 +876,7 @@ static void sii9234_connect(bool on, u8 *devcap)
 				(devcap[MHL_DEVCAP_DEVICE_ID_H] << 8) |
 				devcap[MHL_DEVCAP_DEVICE_ID_L];
 
-			if (adopter_id == 0x3333) {
+			if (adopter_id == 0x3333 || adopter_id == 321) {
 				if (devcap[MHL_DEVCAP_RESERVED] == 2)
 					val = USB_EVENT_CHARGER;
 

@@ -500,6 +500,9 @@ static struct regulator_init_data tuna_vaux1 = {
 		.valid_modes_mask	= REGULATOR_MODE_NORMAL
 					| REGULATOR_MODE_STANDBY,
 		.valid_ops_mask	 =	REGULATOR_CHANGE_MODE
+#ifdef CONFIG_OMAP_REGULATOR_VOLTCHANGE
+					| REGULATOR_CHANGE_VOLTAGE
+#endif
 					| REGULATOR_CHANGE_STATUS,
 		.always_on		= true,
 	},
@@ -530,8 +533,8 @@ static struct regulator_consumer_supply tuna_vaux3_supplies[] = {
 
 static struct regulator_init_data tuna_vaux3 = {
 	.constraints = {
-		.min_uV			= 3100000,
-		.max_uV			= 3100000,
+		.min_uV			= 2900000,
+		.max_uV			= 2900000,
 		.apply_uV		= true,
 		.valid_modes_mask	= REGULATOR_MODE_NORMAL
 					| REGULATOR_MODE_STANDBY,
@@ -583,11 +586,15 @@ static struct regulator_consumer_supply tuna_vusim_supplies[] = {
 
 static struct regulator_init_data tuna_vusim = {
 	.constraints = {
-		.min_uV			= 2200000,
-		.max_uV 		= 2200000,
+		.min_uV			= 2000000,
+		.max_uV 		= 2000000,
+		.apply_uV    = true,
 		.valid_modes_mask	= REGULATOR_MODE_NORMAL
 					| REGULATOR_MODE_STANDBY,
 		.valid_ops_mask	 	= REGULATOR_CHANGE_MODE
+#ifdef CONFIG_OMAP_REGULATOR_VOLTCHANGE
+					| REGULATOR_CHANGE_VOLTAGE
+#endif
 					| REGULATOR_CHANGE_STATUS,
 	},
 	.num_consumer_supplies = ARRAY_SIZE(tuna_vusim_supplies),
@@ -601,6 +608,9 @@ static struct regulator_init_data tuna_vana = {
 		.valid_modes_mask	= REGULATOR_MODE_NORMAL
 					| REGULATOR_MODE_STANDBY,
 		.valid_ops_mask	 = REGULATOR_CHANGE_MODE
+#ifdef CONFIG_OMAP_REGULATOR_VOLTCHANGE
+					| REGULATOR_CHANGE_VOLTAGE
+#endif
 					| REGULATOR_CHANGE_STATUS,
 		.always_on	= true,
 	},
@@ -618,6 +628,9 @@ static struct regulator_init_data tuna_vcxio = {
 		.valid_modes_mask	= REGULATOR_MODE_NORMAL
 					| REGULATOR_MODE_STANDBY,
 		.valid_ops_mask		= REGULATOR_CHANGE_MODE
+#ifdef CONFIG_OMAP_REGULATOR_VOLTCHANGE
+					| REGULATOR_CHANGE_VOLTAGE
+#endif
 					| REGULATOR_CHANGE_STATUS,
 	},
 	.num_consumer_supplies	= ARRAY_SIZE(tuna_vcxio_supply),
@@ -638,6 +651,9 @@ static struct regulator_init_data tuna_vdac = {
 		.valid_modes_mask	= REGULATOR_MODE_NORMAL
 					| REGULATOR_MODE_STANDBY,
 		.valid_ops_mask	 = REGULATOR_CHANGE_MODE
+#ifdef CONFIG_OMAP_REGULATOR_VOLTCHANGE
+					| REGULATOR_CHANGE_VOLTAGE
+#endif
 					| REGULATOR_CHANGE_STATUS,
 	},
 	.num_consumer_supplies	= ARRAY_SIZE(tuna_vdac_supply),
@@ -655,6 +671,9 @@ static struct regulator_init_data tuna_vusb = {
 		.valid_modes_mask	= REGULATOR_MODE_NORMAL
 					| REGULATOR_MODE_STANDBY,
 		.valid_ops_mask	 =	REGULATOR_CHANGE_MODE
+#ifdef CONFIG_OMAP_REGULATOR_VOLTCHANGE
+					| REGULATOR_CHANGE_VOLTAGE
+#endif
 					| REGULATOR_CHANGE_STATUS,
 		.state_mem = {
 			.disabled	= true,
@@ -723,6 +742,9 @@ static struct regulator_init_data tuna_v2v1 = {
 		.valid_modes_mask	= REGULATOR_MODE_NORMAL
 					| REGULATOR_MODE_STANDBY,
 		.valid_ops_mask		= REGULATOR_CHANGE_MODE
+#ifdef CONFIG_OMAP_REGULATOR_VOLTCHANGE
+					| REGULATOR_CHANGE_VOLTAGE
+#endif
 					| REGULATOR_CHANGE_STATUS,
 		.always_on		= true,
 	},
@@ -1301,6 +1323,10 @@ static void tuna_power_off(void)
 	arm_pm_restart('c', NULL);
 }
 
+#ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
+int set_two_phase_freq(int cpufreq);
+#endif
+
 static void __init tuna_init(void)
 {
 	int package = OMAP_PACKAGE_CBS;
@@ -1351,6 +1377,11 @@ static void __init tuna_init(void)
 		omap_mux_init_signal("mcspi4_somi", OMAP_MUX_MODE0);
 		omap_mux_init_signal("mcspi4_cs0", OMAP_MUX_MODE0);
 	}
+
+
+#ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
+	set_two_phase_freq(920000);
+#endif
 
 	tuna_wlan_init();
 	tuna_audio_init();

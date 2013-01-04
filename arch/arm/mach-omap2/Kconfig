@@ -33,7 +33,7 @@ config ARCH_OMAP3
 	depends on ARCH_OMAP2PLUS
 	default y
 	select CPU_V7
-	select USB_ARCH_HAS_EHCI
+	select USB_ARCH_HAS_EHCI if USB_SUPPORT
 	select ARM_L1_CACHE_SHIFT_6 if !ARCH_OMAP4
 	select ARCH_HAS_OPP
 	select PM_OPP if PM
@@ -50,7 +50,7 @@ config ARCH_OMAP4
 	select ARM_ERRATA_720789
 	select ARCH_HAS_OPP
 	select PM_OPP if PM
-	select USB_ARCH_HAS_EHCI
+	select USB_ARCH_HAS_EHCI if USB_SUPPORT
 	select ARCH_HAS_BARRIERS
 
 comment "OMAP Core Type"
@@ -390,13 +390,66 @@ config OMAP4_PPA_CPU1_ONLINE_BUG
 	  If, on the other hand, you do not understand the change, leave the
 	  default as enabled.
 
-endmenu
-
 config FORCE_FAST_CHARGE
 	bool "Force AC charge mode at will"
 	default y
 	help
 	  A simple sysfs interface to force adapters that
 	  are detected as USB to charge as AC.
+
+config OMAP_OVERRIDE_MPUTRIM
+	bool "Override factory-set trim value for MPU DPLL clock"
+	default n
+	help
+	  Override factory-set trim value for MPU DPLL to allow locking at 
+	  rates >2.4GHz (required for MPU frequencies >1.2GHz).
+
+config OMAP_SMARTREFLEX_CUSTOM_SENSOR
+	bool "Enable support for custom NSensor and PSensor values"
+	depends on OMAP_SMARTREFLEX
+	default n
+	help
+	  Enable support for custom NSensor and PSensor values in the 
+	  voltage definitions used for Smartreflex calibration.
+
+config OMAP_REGULATOR_VOLTCHANGE
+	bool "Allow voltage changes for regulators"
+	default n
+	help
+	  Allow voltage changes for regulators.
+
+config OMAP_SCREENOFF_MAXFREQ
+	bool "Enable support for limiting the CPU frequency when screen off" 
+	default y
+	help
+	  Enable support for limiting the CPU frequency when screen is off
+	  by adding the entry 'screen_off_max_freq' to the CPUfreq sysfs
+	  interface.
+
+config OMAP_OCFREQ_1400
+	bool "Enable 1.4GHz MPU frequency slot"
+	depends on OMAP_OVERRIDE_MPUTRIM && OMAP_SMARTREFLEX_CUSTOM_SENSOR
+	help
+	  Enable the 1.4GHz MPU frequency slot.
+
+config OMAP_OCFREQ_1600
+	bool "Enable 1.6GHz MPU frequency slot"
+	depends on OMAP_OVERRIDE_MPUTRIM && OMAP_SMARTREFLEX_CUSTOM_SENSOR
+	help
+	  Enable the 1.6GHz MPU frequency slot.
+
+config OMAP_OCFREQ_1800
+        bool "Enable 1.8GHz MPU frequency slot"
+        depends on OMAP_OVERRIDE_MPUTRIM && OMAP_SMARTREFLEX_CUSTOM_SENSOR
+        help
+          Enable the 1.8GHz MPU frequency slot.
+
+config OMAP_OCFREQ_2000
+        bool "Enable 2.0GHz MPU frequency slot"
+        depends on OMAP_OVERRIDE_MPUTRIM && OMAP_SMARTREFLEX_CUSTOM_SENSOR
+        help
+          Enable the 2.0GHz MPU frequency slot.
+
+endmenu
 
 endif
