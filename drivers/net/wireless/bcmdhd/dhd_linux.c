@@ -42,8 +42,6 @@
 #include <linux/ethtool.h>
 #include <linux/fcntl.h>
 #include <linux/fs.h>
-#include <linux/moduleparam.h>
-#include <linux/module.h>
 
 #include <asm/uaccess.h>
 #include <asm/unaligned.h>
@@ -419,6 +417,10 @@ uint dhd_pktgen_len = 0;
 module_param(dhd_pktgen_len, uint, 0);
 #endif /* SDTEST */
 
+/* Faster transfer during early_suspend */
+bool wifi_pm = false;
+module_param(wifi_pm, bool, 0644);
+
 /* Version string to report */
 #ifdef DHD_DEBUG
 #ifndef SRCBASE
@@ -528,9 +530,6 @@ static void dhd_set_packet_filter(int value, dhd_pub_t *dhd)
 #endif
 }
 
-bool wifi_pm = false;
-module_param(wifi_pm, bool, 0755);
-
 static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 {
 	int power_mode = PM_MAX;
@@ -539,13 +538,13 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 	int bcn_li_dtim = 3;
 	uint roamvar = 1;
 
+	if (wifi_pm) {
+	  pr_info("[imoseyon] wifi power mode changed to PM_FAST\n");
+          power_mode = PM_FAST;
+	}
+
 	DHD_TRACE(("%s: enter, value = %d in_suspend=%d\n",
 		__FUNCTION__, value, dhd->in_suspend));
-
-	if (wifi_pm) {
-		power_mode = PM_FAST;
-		pr_info("[franciscofranco] %p Wi-Fi Power Management policy changed to PM_FAST.", __func__);
-	}
 
 	dhd_suspend_lock(dhd);
 	if (dhd && dhd->up) {
@@ -1277,7 +1276,7 @@ dhd_sendpkt(dhd_pub_t *dhdp, int ifidx, void *pktbuf)
 	}
 	else
 		/* non-proptxstatus way */
-	ret = dhd_bus_txdata(dhdp->bus, pktbuf);
+		ret = dhd_bus_txdata(dhdp->bus, pktbuf);
 #else
 	ret = dhd_bus_txdata(dhdp->bus, pktbuf);
 #endif /* PROP_TXSTATUS */
@@ -3993,11 +3992,16 @@ dhd_os_wd_timer(void *bus, uint wdtick)
 
 	DHD_TRACE(("%s: Enter\n", __FUNCTION__));
 
+	if (!dhd)
+		return;
+
 	flags = dhd_os_spin_lock(pub);
 
 	/* don't start the wd until fw is loaded */
 	if (pub->busstate == DHD_BUS_DOWN) {
 		dhd_os_spin_unlock(pub, flags);
+		if (!wdtick)
+			DHD_OS_WD_WAKE_UNLOCK(pub);
 		return;
 	}
 
@@ -4014,6 +4018,7 @@ dhd_os_wd_timer(void *bus, uint wdtick)
 	}
 
 	if (wdtick) {
+		DHD_OS_WD_WAKE_LOCK(pub);
 		dhd_watchdog_ms = (uint)wdtick;
 		/* Re arm the timer, at last watchdog period */
 		mod_timer(&dhd->timer, jiffies + msecs_to_jiffies(dhd_watchdog_ms));
@@ -4952,23 +4957,34 @@ extern int dhd_wlfc_FIFOcreditmap_update(void* state, uint8* credits);
 int dhd_wlfc_interface_event(struct dhd_info *dhd,
 	ewlfc_mac_entry_action_t action, uint8 ifid, uint8 iftype, uint8* ea)
 {
-	if (dhd->pub.wlfc_state == NULL)
-		return BCME_OK;
+	int ret = BCME_OK;
 
-	return dhd_wlfc_interface_entry_update(dhd->pub.wlfc_state, action, ifid, iftype, ea);
+	dhd_os_wlfc_block(&dhd->pub);
+	if (dhd->pub.wlfc_state != NULL)
+		ret = dhd_wlfc_interface_entry_update(dhd->pub.wlfc_state, action, ifid, iftype, ea);
+	dhd_os_wlfc_unblock(&dhd->pub);
+	return ret;
 }
 
 int dhd_wlfc_FIFOcreditmap_event(struct dhd_info *dhd, uint8* event_data)
 {
-	if (dhd->pub.wlfc_state == NULL)
-		return BCME_OK;
+	int ret = BCME_OK;
 
-	return dhd_wlfc_FIFOcreditmap_update(dhd->pub.wlfc_state, event_data);
+	dhd_os_wlfc_block(&dhd->pub);
+	if (dhd->pub.wlfc_state != NULL)
+		ret = dhd_wlfc_FIFOcreditmap_update(dhd->pub.wlfc_state, event_data);
+	dhd_os_wlfc_unblock(&dhd->pub);
+	return ret;
 }
 
 int dhd_wlfc_event(struct dhd_info *dhd)
 {
-	return dhd_wlfc_enable(&dhd->pub);
+	int ret;
+
+	dhd_os_wlfc_block(&dhd->pub);
+	ret = dhd_wlfc_enable(&dhd->pub);
+	dhd_os_wlfc_unblock(&dhd->pub);
+	return ret;
 }
 #endif /* PROP_TXSTATUS */
 
